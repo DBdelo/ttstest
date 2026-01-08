@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>English TTS (SpeechSynthesis)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    textarea { width: 100%; height: 180px; font-size: 16px; }
+    button { font-size: 16px; padding: 10px 14px; margin-right: 8px; }
+    .row { margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <h2>English TTS</h2>
+  <textarea id="t" placeholder="Type English text here..."></textarea>
+  <div class="row">
+    <button id="speak">Speak</button>
+    <button id="stop">Stop</button>
+  </div>
+
+  <script>
+    function pickEnglishVoice() {
+      const voices = speechSynthesis.getVoices() || [];
+      return voices.find(v => (v.lang || '').toLowerCase().startsWith('en-us'))
+          || voices.find(v => (v.lang || '').toLowerCase().startsWith('en'))
+          || null;
+    }
+
+    function speak() {
+      const text = document.getElementById('t').value.trim();
+      if (!text) return;
+
+      speechSynthesis.cancel();
+
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "en-US";
+      const v = pickEnglishVoice();
+      if (v) u.voice = v;
+
+      speechSynthesis.speak(u);
+    }
+
+    document.getElementById('speak').addEventListener('click', speak);
+    document.getElementById('stop').addEventListener('click', () => speechSynthesis.cancel());
+
+    // voices are sometimes loaded asynchronously
+    window.speechSynthesis.onvoiceschanged = () => {};
+  </script>
+</body>
+</html>
