@@ -13,7 +13,9 @@
 </head>
 <body>
   <h2>English TTS</h2>
-  <textarea id="t" placeholder="Type English text here..."></textarea>
+
+  <textarea id="t">This is a test program for tts. Please enter any text in this field.</textarea>
+
   <div class="row">
     <button id="speak">Speak</button>
     <button id="stop">Stop</button>
@@ -44,8 +46,8 @@
     document.getElementById('speak').addEventListener('click', speak);
     document.getElementById('stop').addEventListener('click', () => speechSynthesis.cancel());
 
-    // voices are sometimes loaded asynchronously
     window.speechSynthesis.onvoiceschanged = () => {};
   </script>
 </body>
 </html>
+
