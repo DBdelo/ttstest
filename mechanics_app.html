@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物理 ヒント式解法トレーナー</title>
+<script>
+MathJax = { tex: { inlineMath: [['$','$']] }, startup: { typeset: true } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Yu Gothic Medium","Yu Gothic","Meiryo",sans-serif;color:#1a1a1a;line-height:1.75;background:#f0f2f5;}
+
+/* ── 問題集タブ ── */
+.book-tabs{display:flex;gap:0;background:#0e3a5c;padding:8px 16px 0;}
+.book-tab{padding:10px 28px;font-size:14px;font-weight:600;border:none;border-radius:10px 10px 0 0;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.08);color:rgba(255,255,255,.55);}
+.book-tab.active{background:#1a5276;color:#fff;}
+.book-tab:hover:not(.active){background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);}
+
+/* ── ナビゲーション ── */
+.nav{position:sticky;top:0;z-index:100;background:#1a5276;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+.nav button{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;}
+.nav button:hover:not(:disabled){background:rgba(255,255,255,.3);}
+.nav button:disabled{opacity:.35;cursor:default;}
+.nav .nav-center{text-align:center;font-size:13px;line-height:1.4;}
+.nav .nav-title{font-weight:700;font-size:15px;}
+.nav .nav-counter{font-size:12px;opacity:.7;}
+
+/* ── レイアウト ── */
+.main-layout{display:flex;gap:16px;max-width:1120px;margin:0 auto;padding:0 12px;}
+.container{flex:1;min-width:0;padding:16px 0 60px;}
+
+/* ── 問題画像 ── */
+.q-img{display:block;margin:12px auto 16px;max-width:520px;width:100%;border:1px solid #d0d0d0;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.08);}
+
+/* ── 小問カード ── */
+.sub-q{background:#fff;border-radius:10px;padding:16px 18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.07);display:none;}
+.sub-q.active{display:block;animation:fadeIn .35s ease;}
+.sub-q h3{font-size:15px;color:#2c3e50;font-weight:700;margin-bottom:8px;}
+
+/* ── 非表示要素 ── */
+.reveal{display:none;}
+.reveal.show{display:block;animation:fadeIn .35s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── 方針ブロック ── */
+.plan{background:#eaf4fc;border-radius:6px;padding:10px 14px;margin:8px 0 10px;font-size:13.5px;line-height:1.75;color:#2c3e50;}
+.plan::before{content:"🔍 方針";display:block;font-weight:700;font-size:12px;color:#2471a3;margin-bottom:3px;}
+
+/* ── 解法ステップ ── */
+.step-item{font-size:13.5px;line-height:1.75;padding:6px 0 6px 28px;position:relative;border-top:1px solid #f0f0f0;}
+.step-item:first-of-type{border-top:none;}
+.step-num{position:absolute;left:0;top:6px;color:#2980b9;font-weight:700;font-size:13px;width:24px;text-align:right;}
+
+/* ── 解答 ── */
+.ans{color:#c0392b;font-weight:700;font-size:14px;margin-top:10px;padding:10px 14px;background:#fdf0ef;border-radius:6px;border-left:3px solid #c0392b;}
+
+/* ── グローバルコントロール ── */
+.global-ctrl{display:flex;justify-content:center;align-items:center;gap:12px;margin:20px 0 10px;position:sticky;bottom:12px;z-index:50;}
+.global-btn{padding:12px 40px;font-size:15px;font-weight:700;border:none;border-radius:10px;cursor:pointer;transition:all .2s;background:#2980b9;color:#fff;box-shadow:0 3px 12px rgba(41,128,185,.35);}
+.global-btn:hover{background:#2471a3;box-shadow:0 4px 16px rgba(41,128,185,.45);transform:translateY(-1px);}
+.global-btn.ans-mode{background:#27ae60;box-shadow:0 3px 12px rgba(39,174,96,.35);}
+.global-btn.ans-mode:hover{background:#219a52;box-shadow:0 4px 16px rgba(39,174,96,.45);}
+.global-btn.done{opacity:.4;pointer-events:none;}
+.undo-btn{padding:10px 24px;font-size:13px;font-weight:600;border:none;border-radius:8px;cursor:pointer;transition:all .2s;background:#7f8c8d;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+.undo-btn:hover:not(:disabled){background:#636e72;box-shadow:0 3px 10px rgba(0,0,0,.2);}
+.undo-btn:disabled{opacity:.3;cursor:default;}
+
+/* ── ブロックパネル ── */
+.block-panel{width:250px;flex-shrink:0;padding-top:16px;}
+.panel-sticky{position:sticky;top:56px;max-height:calc(100vh - 68px);overflow-y:auto;}
+.panel-title{font-size:14px;font-weight:700;color:#2c3e50;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #2980b9;}
+.panel-empty{font-size:12px;color:#95a5a6;line-height:1.6;padding:8px 0;}
+.mat-block{background:#fff;border:2px solid #dce1e6;border-radius:8px;padding:8px 12px;margin-bottom:8px;animation:slideIn .3s ease;transition:border-color .3s,background .3s,box-shadow .3s;}
+.mat-block.highlight{border-color:#f39c12;background:#fef9e7;box-shadow:0 0 14px rgba(243,156,18,.35);}
+.mat-label{font-size:10px;color:#7f8c8d;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;}
+.mat-math{font-size:13px;color:#2c3e50;line-height:1.5;}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+/* ── レスポンシブ ── */
+@media(max-width:860px){
+  .main-layout{flex-direction:column;}
+  .block-panel{width:100%;order:-1;}
+  .panel-sticky{position:relative;top:0;max-height:none;display:flex;flex-wrap:wrap;gap:8px;}
+  .panel-sticky .panel-title{width:100%;}
+  .panel-sticky .panel-empty{width:100%;}
+  .mat-block{flex:1;min-width:140px;}
+}
+@media(max-width:600px){
+  .nav{padding:8px 10px;} .nav button{padding:7px 12px;font-size:13px;}
+  .nav .nav-title{font-size:13px;} .container{padding:10px 0 40px;}
+  .sub-q{padding:12px 14px;} .q-img{max-width:100%;}
+}
+</style>
+</head>
+<body>
+
+<div class="book-tabs">
+  <button class="book-tab active" data-book="mechanics" onclick="switchBook('mechanics')">力学</button>
+  <button class="book-tab" data-book="drill1" onclick="switchBook('drill1')">ドリル1</button>
+</div>
+<div class="nav">
+  <button id="prev-btn" onclick="go(-1)">← 前の問題</button>
+  <div class="nav-center">
+    <div class="nav-title" id="nav-title"></div>
+    <div class="nav-counter" id="nav-counter"></div>
+  </div>
+  <button id="next-btn" onclick="go(1)">次の問題 →</button>
+</div>
+
+<div class="main-layout">
+<div class="container" id="container">
+
+<!-- ══════ 問12 ══════ -->
+<div class="problem" data-book="mechanics" data-id="q12" data-title="問12 ── 斜面滑落＋斜方投射">
+<img class="q-img" src="物理力学/IMG_1617.JPG" alt="問12">
+
+<div class="sub-q">
+  <h3>(1) 斜面を滑る時間 $t_1$ と垂直抗力 $N$</h3>
+  <div class="reveal plan">求めたいのは $t_1$ と $N$ の2つです。「滑らか」なので摩擦なし。斜面方向の力は重力の成分だけなので、力→加速度→等加速度の式で時間、と順番に求められます。$N$ は斜面に垂直な方向のつり合いです。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>「滑らかな斜面」なので摩擦はありません。斜面に沿った力は重力の斜面成分 $mg\sin 30°$ だけです。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>❷運動方程式 $ma = F$ を斜面方向に立てます。$ma = mg\sin 30°$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>両辺を $m$ で割ると、$a = g\sin 30° = g/2$ です。</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>斜面に垂直な方向は動かない（加速度0）ので、力のつり合いから $N = mg\cos 30° = \frac{\sqrt{3}}{2}mg$ です。</div>
+  <div class="reveal step-item"><span class="step-num">5.</span>斜面の距離は $s = h / \sin 30° = 2h$ です。</div>
+  <div class="reveal step-item"><span class="step-num">6.</span>初速0なので、❶等加速度 $s = \frac{1}{2}at^2$ に代入します。$2h = \frac{1}{2} \cdot \frac{g}{2} \cdot t_1^2$ ……①</div>
+  <div class="reveal step-item"><span class="step-num">7.</span>①を整理すると $t_1^2 = 8h/g$ なので、$t_1 = 2\sqrt{2h/g}$ です。</div>
+  <div class="reveal ans">$t_1 = 2\sqrt{2h/g}$　　$N = \frac{\sqrt{3}}{2}mg$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2) B点での速さ $v$</h3>
+  <div class="reveal plan">初速0で高さ $h$ を降りてきただけです。「高さの差」と「速さ」を直接つなげるエネルギーの方法が一番かんたんです。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>経路に関係なく速さが出せる❸エネルギー保存則 $\frac{1}{2}mv^2 + mgh = \text{一定}$ を使います。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>A（高さ $h$、速さ0）とB（高さ0、速さ $v$）で保存則を立てます。$mgh = \frac{1}{2}mv^2$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>両辺を $m$ で割って $v^2 = 2gh$、よって $v = \sqrt{2gh}$ です。</div>
+  <div class="reveal ans">$v = \sqrt{2gh}$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(3) 水面到達時間 $t_2$</h3>
+  <div class="reveal plan">B点から先は空中の放物運動です。水面までの距離は不明ですが、「60°で飛び込む」という速度の向きの条件があります。速度成分を求めて角度条件に代入すれば $t_2$ が出ます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>B点から先は放物運動です。水平と鉛直に分けます（❼斜方投射の考え方）。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>B点の速度を分解します。水平 $v_x = v\cos 30° = \frac{\sqrt{3}}{2}v$（一定）、鉛直の初速 $v_{y0} = v\sin 30° = \frac{v}{2}$（下向き）</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>鉛直の速さは重力で増えるので、❶等加速度より $v_y = v_{y0} + gt_2 = \frac{v}{2} + gt_2$</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>「60°で飛び込む」＝水面で速度の向きが水平から60°。条件は $v_y / v_x = \tan 60° = \sqrt{3}$</div>
+  <div class="reveal step-item"><span class="step-num">5.</span>角度の条件に速度成分を代入します。$\frac{\frac{v}{2} + gt_2}{\frac{\sqrt{3}}{2}v} = \sqrt{3}$　→　$\frac{v}{2} + gt_2 = \frac{3}{2}v$ ……①</div>
+  <div class="reveal step-item"><span class="step-num">6.</span>①を整理すると $gt_2 = v$、$t_2 = v/g = \sqrt{2h/g}$ です。</div>
+  <div class="reveal ans">$t_2 = v/g = \sqrt{2h/g}$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(4) 水面からB点の高さ $H$</h3>
+  <div class="reveal plan">$t_2$ の間に鉛直方向に落ちた距離＝高さ $H$ です。加速度・初速・時間がすべてわかっているので、等加速度の距離の式に当てはめます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>❶等加速度 $s = v_0 t + \frac{1}{2}gt^2$ に代入します。$H = \frac{v}{2} \cdot t_2 + \frac{1}{2}g \cdot t_2^2$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$t_2 = v/g$ を代入します。$H = \frac{v}{2}\cdot\frac{v}{g} + \frac{1}{2}g\cdot\frac{v^2}{g^2} = \frac{v^2}{2g} + \frac{v^2}{2g} = \frac{v^2}{g}$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>さらに $v^2 = 2gh$ を代入して $H = 2gh/g = 2h$ です。</div>
+  <div class="reveal ans">$H = v^2/g = 2h$</div>
+</div>
+</div>
+
+<!-- ══════ 問16 ══════ -->
+<div class="problem" data-book="mechanics" data-id="q16" data-title="問16 ── 斜面＋滑車＋摩擦">
+<img class="q-img" src="物理力学/IMG_1618.JPG" alt="問16">
+
+<div class="sub-q">
+  <h3>(1) P,Qが静止する $M$ の範囲</h3>
+  <div class="reveal plan">「静止」＝加速度0＝力のつり合い。摩擦があるので、Pが落ちそうな場合と引き上げられそうな場合の2方向を考え、不等式を2本立てます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>加速度0なので力のつり合いです。Pに働く力を整理します。糸の張力 $T = Mg$ ……①、重力の斜面成分 $mg\sin 30° = mg/2$ ……②</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>最大静止摩擦力は $f_{\max} = \mu_s \cdot mg\cos 30° = \frac{\sqrt{3}}{2}\mu_s mg$ ……③ です。</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>Pが落ちそうな場合（摩擦は上向き）：$T + f_{\max} \geq mg\sin 30°$ に①②③を代入します。$Mg + \frac{\sqrt{3}}{2}\mu_s mg \geq \frac{mg}{2}$</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>$M$ について整理すると $M \geq \frac{m}{2}(1 - \sqrt{3}\,\mu_s)$ ……④</div>
+  <div class="reveal step-item"><span class="step-num">5.</span>引き上げられそうな場合（摩擦は下向き）：$mg\sin 30° + f_{\max} \geq T$ に①②③を代入します。$\frac{mg}{2} + \frac{\sqrt{3}}{2}\mu_s mg \geq Mg$</div>
+  <div class="reveal step-item"><span class="step-num">6.</span>$M$ について整理すると $M \leq \frac{m}{2}(1 + \sqrt{3}\,\mu_s)$ ……⑤</div>
+  <div class="reveal step-item"><span class="step-num">7.</span>④⑤を合わせて、問題の $\mu_s$ の値を代入すれば $M$ の範囲が出ます。</div>
+  <div class="reveal ans">$(3-\sqrt{3})\,m/6 \leq M \leq (3+\sqrt{3})\,m/6$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2-ア) $M = \frac{3}{2}m$ のとき、加速度 $a$ と速さ $v$</h3>
+  <div class="reveal plan">$M$ が大きいので系全体が動きます。糸でつながっていて加速度は同じなので、系全体でまとめて運動方程式を立てます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>P・Qは糸でつながっていて加速度は同じ $a$ です。系全体で❷運動方程式を立てます。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>駆動力（Q側）$= Mg = \frac{3}{2}mg$、抵抗（P側）$= mg\sin 30° + \mu_k mg\cos 30°$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>❷運動方程式 $(M+m)\,a = $ 駆動力 $-$ 抵抗 に代入して整理すると、$a = 3g/10$ です。</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>初速0なので、❶等加速度 $v^2 = 2ah$ に代入します。$v^2 = 2 \cdot \frac{3g}{10} \cdot h = \frac{3gh}{5}$</div>
+  <div class="reveal step-item"><span class="step-num">5.</span>よって $v = \sqrt{3gh/5}$ です。</div>
+  <div class="reveal ans">$a = 3g/10$　　$v = \sqrt{3gh/5}$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2-イ) Q着地後、Pが止まるまでの距離 $l$ と時間 $t$</h3>
+  <div class="reveal plan">Q着地で糸がゆるみ、Pは速さ $v$ で斜面を上昇中。重力成分と摩擦がどちらも減速方向に働きます。減速度→停止距離→時間と順番に求めます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>Qが着地すると糸がゆるみ、Pだけが速さ $v$ で斜面を上ります。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>Pに働く減速力は $mg\sin 30° + \mu_k mg\cos 30°$ です。どちらも上りを止める向きに働きます。</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>❷運動方程式より $a_2 = g\sin 30° + \mu_k g\cos 30°$ です。</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>初速 $v$ で減速して止まるまでの距離を求めます。❶等加速度 $v^2 = 2a_2 d$ より $d = v^2/(2a_2)$ です。</div>
+  <div class="reveal step-item"><span class="step-num">5.</span>つながっている間にPは斜面を $h$ 上がっているので、Pが最初にいた位置からの合計距離は $l = h + d$ です。</div>
+  <div class="reveal step-item"><span class="step-num">6.</span>時間は2区間に分けます。連結中 $t_1 = v/a$（(2-ア)の $a$）、単独 $t_2 = v/a_2$ です。</div>
+  <div class="reveal step-item"><span class="step-num">7.</span>値を代入して整理すると $l = 7h/5$、$t = t_1 + t_2 = 14v/(3g)$ です。</div>
+  <div class="reveal ans">$l = 7h/5$　　$t = 14v/(3g)$</div>
+</div>
+</div>
+
+<!-- ══════ 問21 ══════ -->
+<div class="problem" data-book="mechanics" data-id="q21" data-title="問21 ── 円弧すべり台＋放物運動">
+<img class="q-img" src="物理力学/IMG_1619.JPG" alt="問21">
+
+<div class="sub-q">
+  <h3>(1) B点・C点での速さ $v_B$, $v_C$</h3>
+  <div class="reveal plan">円弧上の運動なので等加速度は使えません。摩擦なしなので高さの差だけで速さが決まるエネルギーの方法を使います。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>「滑らか」なので❸エネルギー保存則 $\frac{1}{2}mv^2 + mgh = \text{一定}$ が使えます。高さの基準をBにとります。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>AはBより $r$ 高い位置です。A→Bで $mgh$ がすべて運動Eに変わるので $mgr = \frac{1}{2}mv_B^2$ → $v_B = \sqrt{2gr}$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>CはBより $r(1-\cos 60°) = r/2$ 高い位置です。$mg \cdot r/2 = \frac{1}{2}mv_C^2$ → $v_C = \sqrt{gr}$</div>
+  <div class="reveal ans">$v_B = \sqrt{2gr}$　　$v_C = \sqrt{gr}$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2) AC間で重力と垂直抗力がする仕事</h3>
+  <div class="reveal plan">重力の仕事は高さの差だけで決まります。垂直抗力は動く方向と常に直角なので仕事ゼロです。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>重力の仕事は経路によらず高さの差で決まります。AからCへ $r/2$ 下がったので $W_g = mg \cdot r/2 = mgr/2$ です。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>垂直抗力は面に垂直で、速度の向きと直角です。力と移動方向が直角 → $W_N = 0$ です。</div>
+  <div class="reveal ans">$W_g = mgr/2$　　$W_N = 0$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(3) 最高点Dの速さ $v_D$ と床からの高さ $h$</h3>
+  <div class="reveal plan">Cで離れた後は放物運動です。最高点では鉛直速度が0なので、速さは水平成分だけ。高さはCからの上昇分を足します。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>C点での速度は円弧の接線方向（水平から60°上向き）です。水平と鉛直に分けます。$v_{Cx} = v_C\cos 60° = \frac{\sqrt{gr}}{2}$、$v_{Cy} = v_C\sin 60° = \frac{\sqrt{3gr}}{2}$ ……①</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>最高点Dでは鉛直速度が0です。水平成分は変わらないので $v_D = v_{Cx} = \frac{\sqrt{gr}}{2}$ です。</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>鉛直方向の上昇高さを求めます。❶等加速度 $0 = v_{Cy}^2 - 2g\Delta h$ より $\Delta h = v_{Cy}^2/(2g)$</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>ここに①を代入すると $\Delta h = 3gr/(4 \cdot 2g) = 3r/8$ です。</div>
+  <div class="reveal step-item"><span class="step-num">5.</span>C点の高さは $r/2$ なので、Dの高さは $h = r/2 + 3r/8 = 7r/8$ です。</div>
+  <div class="reveal ans">$v_D = \sqrt{gr}/2$　　$h = 7r/8$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(4) 床衝突速さ $v_E$</h3>
+  <div class="reveal plan">途中の経路は複雑ですが、摩擦なしなのでエネルギーはずっと保存。結局「高さ $r$ を降りた」だけで速さが出ます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>A→E全体で摩擦なし → ❸エネルギー保存則を1本。$mgr = \frac{1}{2}mv_E^2$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>解くと $v_E = \sqrt{2gr}$ です。(1)の $v_B$ と同じ値になります。</div>
+  <div class="reveal ans">$v_E = \sqrt{2gr}$</div>
+</div>
+</div>
+
+<!-- ══════ 問22 ══════ -->
+<div class="problem" data-book="mechanics" data-id="q22" data-title="問22 ── ばね＋摩擦＋斜面">
+<img class="q-img" src="物理力学/IMG_1619.JPG" alt="問22">
+
+<div class="sub-q">
+  <h3>(1) A点での速さ $v$</h3>
+  <div class="reveal plan">ばねを放すと弾性エネルギーが運動エネルギーに変わります。左側は「滑らか」なので損失ゼロです。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>左は滑らかなので摩擦なし。❹ばねの弾性E $U = \frac{1}{2}ka^2$ がそのまま運動Eに変わります。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>❸エネルギー保存則より $\frac{1}{2}ka^2 = \frac{1}{2}mv^2$ です。</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>解くと $v^2 = ka^2/m$、よって $v = a\sqrt{k/m}$ です。</div>
+  <div class="reveal ans">$v = a\sqrt{k/m}$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2) 縮み $a/2$ のときの速さ $u$</h3>
+  <div class="reveal plan">ばねがまだ途中まで縮んでいて、エネルギーが全部は変換されていません。「最初のばねE ＝ 残りのばねE ＋ 運動E」です。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>❸エネルギー保存則で「最初の弾性E ＝ 残りの弾性E ＋ 運動E」を立てます。$\frac{1}{2}ka^2 = \frac{1}{2}k\!\left(\frac{a}{2}\right)^2 + \frac{1}{2}mu^2$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>左辺 − 右辺第1項 = $\frac{1}{2}k(a^2 - a^2/4) = \frac{3}{8}ka^2$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>これが $\frac{1}{2}mu^2$ に等しいので $u = a\sqrt{3k/(4m)}$ です。</div>
+  <div class="reveal ans">$u = a\sqrt{3k/(4m)}$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(3) ばねを $a$ 縮める外力の仕事 $W$</h3>
+  <div class="reveal plan">はじめも終わりも静止 → 運動Eの変化ゼロ → 仕事がそのままばねのEに。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>静止→静止で運動Eの変化は0なので、外力の仕事がすべて❹弾性E に蓄えられます。$W = \frac{1}{2}ka^2$ です。</div>
+  <div class="reveal ans">$W = \frac{1}{2}ka^2$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(4) A通過後、B点で停止。距離AB</h3>
+  <div class="reveal plan">摩擦区間で運動Eが摩擦熱に変わって止まります。「運動E ＝ 摩擦力 × 距離」の1本です。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>A点で速さ $v$ → B点で停止。❸エネルギー保存則（摩擦あり）で $\frac{1}{2}mv^2 = \mu mg \cdot \text{AB}$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>AB について解くと $\text{AB} = v^2/(2\mu g)$ です。</div>
+  <div class="reveal ans">$\text{AB} = v^2/(2\mu g)$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(5) 右が30°斜面（摩擦$\mu$）のとき、最高点Cまでの距離AC</h3>
+  <div class="reveal plan">斜面なので「位置Eの増加」と「摩擦熱」の2つに運動Eが分かれます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>運動E → 位置Eの増加＋摩擦熱。❸エネルギー保存則（摩擦あり）を立てます。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$\frac{1}{2}mv^2 = mg\sin 30° \cdot \text{AC} + \mu mg\cos 30° \cdot \text{AC}$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>右辺をまとめると $mg(\sin 30° + \mu\cos 30°)\cdot\text{AC}$</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>AC について解くと $\text{AC} = v^2/\{g(1+\sqrt{3}\,\mu)\}$ です。</div>
+  <div class="reveal ans">$\text{AC} = v^2/\{g(1+\sqrt{3}\,\mu)\}$</div>
+</div>
+</div>
+
+<!-- ══════ 問25 ══════ -->
+<div class="problem" data-book="mechanics" data-id="q25" data-title="問25 ── 衝突＋斜面摩擦">
+<img class="q-img" src="物理力学/IMG_1620.JPG" alt="問25">
+
+<div class="sub-q">
+  <h3>(1) 衝突直後の速度 $v$（P）, $V$（Q）</h3>
+  <div class="reveal plan">未知数が2つなので式を2本用意します。運動量保存で1本、反発係数の定義でもう1本です。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>未知数は衝突後の $v$（P）と $V$（Q）の2つです。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>❺運動量保存：$mv_0 = mv + MV$ ……①</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>❻反発係数の定義：$e = (V - v)/(v_0 - 0)$、整理すると $V - v = ev_0$ ……②</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>②より $V = v + ev_0$ ……②' を①に代入します。$mv_0 = mv + M(v + ev_0)$</div>
+  <div class="reveal step-item"><span class="step-num">5.</span>整理すると $v = \frac{(m - eM)v_0}{m + M}$ ……③、②'に戻して $V = \frac{m(1+e)v_0}{m + M}$ です。</div>
+  <div class="reveal ans">$v = (m-eM)v_0/(m+M)$　　$V = m(1+e)v_0/(m+M)$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2) Pが受けた力積</h3>
+  <div class="reveal plan">力積＝運動量の変化。衝突前後のPの運動量はもうわかっているので引き算するだけです。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>❽力積 $J = mv' - mv$ です。Pの運動量は衝突前 $mv_0$、衝突後 $mv$ なので $J = mv - mv_0$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>ここに (1) の③を代入して整理すると $J = -\frac{mM(1+e)}{m+M}v_0$（左向き）です。</div>
+  <div class="reveal ans">$J = -mM(1+e)v_0/(m+M)$（左向き）</div>
+</div>
+
+<div class="sub-q">
+  <h3>(3) Pが左へ動く条件</h3>
+  <div class="reveal plan">(1) の結果の符号を調べるだけです。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>(1) の③ $v = (m - eM)v_0/(m+M)$ で、$v &lt; 0$（左向き）になるのは分子 $m - eM &lt; 0$ のときです。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$m - eM &lt; 0$ を整理すると $e > m/M$ です。</div>
+  <div class="reveal ans">$e > m/M$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(4) Qが斜面を上りD点で止まり、Bに戻る速さ $V_1$</h3>
+  <div class="reveal plan">上りと下りでそれぞれエネルギー保存則を立てます。摩擦は両方向ともエネルギーを奪います。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>摩擦つき斜面なので❸エネルギー保存則（摩擦あり）を上り・下りで2本立てます。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span><strong>上り</strong>（B→D、距離 $l$）：$\frac{1}{2}MV^2 = Mgl\sin\theta + \mu Mg\cos\theta \cdot l$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>整理すると $l = \frac{V^2}{2g(\sin\theta + \mu\cos\theta)}$ ……①</div>
+  <div class="reveal step-item"><span class="step-num">4.</span><strong>下り</strong>（D→B、同じ距離 $l$）：$Mgl\sin\theta = \frac{1}{2}MV_1^2 + \mu Mg\cos\theta \cdot l$</div>
+  <div class="reveal step-item"><span class="step-num">5.</span>整理すると $V_1^2 = 2gl(\sin\theta - \mu\cos\theta)$ ……②</div>
+  <div class="reveal step-item"><span class="step-num">6.</span>②に①を代入して $V_1 = V\sqrt{(\sin\theta - \mu\cos\theta)/(\sin\theta + \mu\cos\theta)}$ です。</div>
+  <div class="reveal ans">$l = V^2/\{2g(\sin\theta+\mu\cos\theta)\}$　　$V_1 = V\sqrt{(\sin\theta-\mu\cos\theta)/(\sin\theta+\mu\cos\theta)}$</div>
+</div>
+</div>
+
+<!-- ══════ 問26 ══════ -->
+<div class="problem" data-book="mechanics" data-id="q26" data-title="問26 ── 振り子衝突＋弾丸埋め込み">
+<img class="q-img" src="物理力学/IMG_1621.JPG" alt="問26">
+
+<div class="sub-q">
+  <h3>衝突前のAの速さ</h3>
+  <div class="reveal plan">60°の位置から最下点まで降りるだけ。高さの差からエネルギー保存で求めます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>高さの差は $l(1-\cos 60°) = l/2$ です。❸エネルギー保存則より $mg \cdot l/2 = \frac{1}{2}mv_0^2$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>解くと $v_0 = \sqrt{gl}$ です。</div>
+  <div class="reveal ans">$v_0 = \sqrt{gl}$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(1) 完全弾性衝突（$e=1$）→ Bの速さ</h3>
+  <div class="reveal plan">❺運動量保存と❻反発係数($e=1$)の2式を連立します。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>❺運動量保存：$mv_0 = mv_A' + 2m \cdot v_B$ ……①</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>❻反発係数（$e=1$）：$v_B - v_A' = v_0$ ……②</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>②より $v_A' = v_B - v_0$ を①に代入して整理すると $v_B = \frac{2}{3}v_0 = \frac{2}{3}\sqrt{gl}$ です。</div>
+  <div class="reveal ans">$v_B = \frac{2}{3}\sqrt{gl}$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2) Aが衝突後静止する場合の反発係数</h3>
+  <div class="reveal plan">$v_A' = 0$ がわかっているので未知数が1つ減り、運動量保存ですぐ解けます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>❺運動量保存に $v_A' = 0$ を入れます。$mv_0 = 2m \cdot v_B'$ → $v_B' = v_0/2$ です。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>❻反発係数の定義に代入します。$e = (v_B' - 0) / v_0 = (v_0/2)/v_0$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>よって $e = 1/2$ です。</div>
+  <div class="reveal ans">$e = 1/2$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(3) (2)のときBの上昇高さ</h3>
+  <div class="reveal plan">衝突後のBは速さ $v_0/2$ で動き出して上昇。運動E→位置Eの変換です。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>❸エネルギー保存則で $\frac{1}{2}(2m)(v_0/2)^2 = (2m)g\Delta h$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>整理すると $\Delta h = v_0^2/8g = gl/(8g) = l/8$ です。</div>
+  <div class="reveal ans">$\Delta h = l/8$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(4) 弾丸C（質量$M_C$）をBに撃ち込み一体化。$v' = v_C/5$ の条件</h3>
+  <div class="reveal plan">「一体になる」＝完全非弾性衝突。運動量保存を1本立てて条件を代入します。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>❺運動量保存：$M_C v_C = (2m + M_C) \cdot v'$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$v' = v_C/5$ を代入します。$M_C v_C = (2m + M_C) \cdot v_C/5$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>両辺を $v_C$ で割って整理すると $5M_C = 2m + M_C$、$M_C = m/2$ です。</div>
+  <div class="reveal ans">$M_C = m/2$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(5) (4)で失われた力学的エネルギー</h3>
+  <div class="reveal plan">「衝突前の運動E − 衝突後の運動E」を計算します。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>衝突前の運動E：$\frac{1}{2}M_C v_C^2 = \frac{1}{2} \cdot \frac{m}{2} \cdot v_C^2 = \frac{mv_C^2}{4}$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>衝突後の運動E：$\frac{1}{2}(2m + m/2)(v_C/5)^2 = \frac{1}{2} \cdot \frac{5m}{2} \cdot \frac{v_C^2}{25} = \frac{mv_C^2}{20}$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>差は $\frac{mv_C^2}{4} - \frac{mv_C^2}{20} = \frac{mv_C^2}{5}$（衝突前の4/5が失われます）。</div>
+  <div class="reveal ans">$\Delta E = mv_C^2/5$</div>
+</div>
+</div>
+
+<!-- ══════ 問28 ══════ -->
+<div class="problem" data-book="mechanics" data-id="q28" data-title="問28 ── 二方向投射＋衝突">
+<img class="q-img" src="物理力学/IMG_1622.JPG" alt="問28">
+
+<div class="sub-q">
+  <h3>(1) Aの着地時間</h3>
+  <div class="reveal plan">Aは真上に投げ上げ。地面に戻る＝高さ0の条件を式にして解きます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>❼斜方投射の鉛直の式で $y = vt - \frac{1}{2}gt^2$ です。$y = 0$ を解きます。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$y = 0$ とすると $t(v - \frac{1}{2}gt) = 0$ です。$t = 0$ は打ち上げの瞬間です。</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>もう一つの解は $v - \frac{1}{2}gt = 0$ より $t = 2v/g$ です。</div>
+  <div class="reveal ans">$t = 2v/g$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2) BがAに衝突する条件 → $\sin\alpha$</h3>
+  <div class="reveal plan">「衝突する」＝同じ時刻に同じ高さ。$y_A = y_B$ の条件を立てれば $\alpha$ が出ます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>A：$y_A = vt - \frac{1}{2}gt^2$、B：$y_B = V\sin\alpha \cdot t - \frac{1}{2}gt^2$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$y_A = y_B$ とすると、$-\frac{1}{2}gt^2$ が共通で打ち消し合い、$vt = V\sin\alpha \cdot t$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>両辺を $t$ で割ると $\sin\alpha = v/V$ です。</div>
+  <div class="reveal ans">$\sin\alpha = v/V$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(3) Aの最高点で衝突 → PQ間距離 $l$</h3>
+  <div class="reveal plan">Aの最高点の時刻に、Bが水平方向にどれだけ進んだかが距離 $l$ です。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>Aが最高点に着く時刻は、❶等加速度 $v_y = v - gt = 0$ より $t^* = v/g$ ……①</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$\cos\alpha$ を求めます。$\sin\alpha = v/V$ より $\cos\alpha = \sqrt{1 - v^2/V^2} = \sqrt{V^2 - v^2}/V$ ……②</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>PQ間距離 $l =$ Bの水平移動距離 $= V\cos\alpha \cdot t^*$ に①②を代入します。$l = \sqrt{V^2 - v^2} \cdot v/g$ です。</div>
+  <div class="reveal ans">$l = v\sqrt{V^2 - v^2}\,/\,g$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(4) 最高点で合体 → 合体直後の速度</h3>
+  <div class="reveal plan">最高点ではA, Bとも鉛直速度が0。水平方向の運動量保存を立てます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>最高点ではA, Bとも鉛直速度0です。Aは真上に投げたので水平速度も0。Bの水平速度は $V\cos\alpha$ です。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>「合体」＝完全非弾性衝突。❺運動量保存（水平）：$M \cdot V\cos\alpha = (m+M) \cdot v'$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>よって $v' = MV\cos\alpha/(m+M)$（水平のみ。鉛直は0）です。</div>
+  <div class="reveal ans">水平: $MV\cos\alpha/(m+M)$　　鉛直: $0$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(5) 落下点のPからの距離 $x$</h3>
+  <div class="reveal plan">合体後は最高点 $v^2/(2g)$ からの水平投射。落下時間と水平距離を順に求めます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>最高点の高さ $h_0 = v^2/(2g)$ です。落下時間は❶等加速度 $h_0 = \frac{1}{2}g\tau^2$ より $\tau = v/g$ です。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>水平移動距離 $= v' \cdot \tau = \frac{MV\cos\alpha}{m+M} \cdot \frac{v}{g}$ に $\cos\alpha$ を代入して整理します。</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>Pからの距離は $x = \frac{Mv\sqrt{V^2-v^2}}{(m+M)g}$ です。</div>
+  <div class="reveal ans">$x = Mv\sqrt{V^2-v^2}\,/\,\{(m+M)g\}$</div>
+</div>
+</div>
+
+<!-- ══════ 問29 ══════ -->
+<div class="problem" data-book="mechanics" data-id="q29" data-title="問29 ── ロケット分離">
+<img class="q-img" src="物理力学/IMG_1622.JPG" alt="問29">
+
+<div class="sub-q">
+  <h3>(1) R放出後、P·Qの速さ</h3>
+  <div class="reveal plan">宇宙空間で外力なし。初めに全体が静止しているので、運動量の合計はずっと0です。相対速度の条件も合わせて2式連立します。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>❺運動量保存（合計0）：$m \cdot v_R + 3m \cdot v_{PQ} = 0$ ……①</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>「P·Qから見て速さ $u$」→ 相対速度の条件：$v_{PQ} - v_R = u$ ……②</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>①より $v_R = -3v_{PQ}$ ……①' を②に代入します。$v_{PQ} - (-3v_{PQ}) = u$ → $4v_{PQ} = u$</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>よって $v_{PQ} = u/4$（右向き）です。</div>
+  <div class="reveal ans">$v_{PQ} = u/4$（右向き）</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2) R放出に要したエネルギー</h3>
+  <div class="reveal plan">最初は全体静止で運動E＝0。放出後にR, P·Qが動いているので、増えた運動Eの合計がそのまま使ったエネルギーです。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>(1)の①'より $v_R = -3 \cdot u/4 = -3u/4$（左向き）です。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>Rの運動E：$\frac{1}{2}m(3u/4)^2 = \frac{9mu^2}{32}$、P·Qの運動E：$\frac{1}{2}(3m)(u/4)^2 = \frac{3mu^2}{32}$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>合計は $\frac{9mu^2}{32} + \frac{3mu^2}{32} = \frac{12mu^2}{32} = \frac{3mu^2}{8}$ です。</div>
+  <div class="reveal ans">$E = 3mu^2/8$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(3) Q放出後のPの速さ</h3>
+  <div class="reveal plan">(1)と同じ考え方を2段目に使います。今度の系はP·Q（質量 $3m$、速度 $u/4$）です。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>分離前の運動量が保存されるので、❺運動量保存：$m \cdot v_Q + 2m \cdot v_P = 3m \cdot u/4$ ……①</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>「Pから見て速さ $u$」→ 相対速度：$v_P - v_Q = u$ ……②</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>②より $v_Q = v_P - u$ ……②' を①に代入します。$m(v_P - u) + 2mv_P = 3mu/4$</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>整理すると $3mv_P = 3mu/4 + mu = 7mu/4$、$v_P = 7u/12$（右向き）です。</div>
+  <div class="reveal ans">$v_P = 7u/12$（右向き）</div>
+</div>
+</div>
+
+<!-- ══════ 問32 ══════ -->
+<div class="problem" data-book="mechanics" data-id="q32" data-title="問32 ── 可動台上の運動">
+<img class="q-img" src="物理力学/IMG_1623.JPG" alt="問32">
+
+<div class="sub-q">
+  <h3>(1) 台固定。B→Cで停止（距離$l$）。動摩擦$\mu$は？</h3>
+  <div class="reveal plan">高さ $h$ から降りて摩擦で停止。「位置E ＝ 摩擦熱」の1本で $\mu$ が出ます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>❸エネルギー保存則（摩擦あり）：$mgh = \mu mg \cdot l$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>両辺を $mg$ で割ると $h = \mu l$、よって $\mu = h/l$ です。</div>
+  <div class="reveal ans">$\mu = h/l$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2-ア) 台自由。$v$, $V$ の関係式</h3>
+  <div class="reveal plan">台が動けるので、Pが滑ると台は反対に動きます。運動量保存とエネルギー保存の2本が関係式です。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>水平方向に外力がないので、❺運動量保存：$mv + MV = 0$ ……①</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>曲面に摩擦なしなので、❸エネルギー保存則：$mgh = \frac{1}{2}mv^2 + \frac{1}{2}MV^2$ ……②</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>この①②の2本が求める関係式です。</div>
+  <div class="reveal ans">① $mv + MV = 0$　　② $mgh = \frac{1}{2}mv^2 + \frac{1}{2}MV^2$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2-イ) $v$ と $V$ を求める</h3>
+  <div class="reveal plan">①から $V$ を $v$ で表して②に代入すれば、$v$ だけの式になります。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>①より $V = -mv/M$ ……①' です。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>①'を②に代入します。$mgh = \frac{1}{2}mv^2 + \frac{1}{2}M \cdot \frac{m^2 v^2}{M^2} = \frac{1}{2}mv^2\!\left(1 + \frac{m}{M}\right)$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>整理すると $v^2 = \frac{2Mgh}{M+m}$、$v = \sqrt{\frac{2Mgh}{M+m}}$ です。①'に戻して $V$ も出ます。</div>
+  <div class="reveal ans">$v = \sqrt{2Mgh/(M+m)}$　　$V = -(m/M)\sqrt{2Mgh/(M+m)}$</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2-ウ) Pが台に対して止まったとき、台はどうなるか</h3>
+  <div class="reveal plan">Pと台が同じ速度 $v_{\text{共}}$ で動いている状態。運動量保存に代入すればわかります。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>①はいつでも成り立ちます。Pと台が同じ速度 $v_{\text{共}}$ → $(m + M)v_{\text{共}} = 0$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$m + M \neq 0$ なので $v_{\text{共}} = 0$ です。Pも台も停止します。</div>
+  <div class="reveal ans">Pが台に対して停止すると、台も停止します</div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     ドリル1
+     ══════════════════════════════════════════════ -->
+
+<!-- ══════ D1: 水平投射 ══════ -->
+<div class="problem" data-book="drill1" data-id="d1" data-title="水平投射 ── 水平方向の変位">
+<img class="q-img" src="物理　ドリル1/IMG_1624.JPG" alt="水平投射">
+
+<div class="sub-q">
+  <h3>① $h = 4.9$ m, $v_0 = 5.0$ m/s</h3>
+  <div class="reveal plan">水平投射では水平方向は等速、鉛直方向は自由落下です。落下時間を求めてから水平距離を計算します。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>水平投射では、水平方向は速さ $v_0$ の等速直線運動、鉛直方向は初速0の自由落下です。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>鉛直方向で落下時間を求めます。$h = \frac{1}{2}gt^2$ より $4.9 = \frac{1}{2} \times 9.8 \times t^2$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>整理すると $t^2 = 1.0$、$t = 1.0$ s です。</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>水平方向の変位は $x = v_0 t = 5.0 \times 1.0 = 5.0$ m です。</div>
+  <div class="reveal ans">$x = 5.0$ m</div>
+</div>
+
+<div class="sub-q">
+  <h3>② $h = 44.1$ m, $v_0 = 8.0$ m/s</h3>
+  <div class="reveal plan">①と同じ手順です。落下時間→水平距離。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>$h = \frac{1}{2}gt^2$ に代入します。$44.1 = \frac{1}{2} \times 9.8 \times t^2$</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>整理すると $t^2 = 9.0$、$t = 3.0$ s です。</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>$x = v_0 t = 8.0 \times 3.0 = 24$ m です。</div>
+  <div class="reveal ans">$x = 24$ m</div>
+</div>
+</div>
+
+<!-- ══════ D2: 斜方投射 ══════ -->
+<div class="problem" data-book="drill1" data-id="d2" data-title="斜方投射 ── 水平方向の変位">
+<img class="q-img" src="物理　ドリル1/IMG_1625.JPG" alt="斜方投射">
+
+<div class="sub-q">
+  <h3>① $v_0 = 19.6$ m/s, $\theta = 30°$</h3>
+  <div class="reveal plan">斜方投射では速度を水平・鉛直に分解します。地面に戻る時刻（滞空時間）を求めてから水平距離を計算します。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>速度を分解します。水平 $v_x = v_0\cos 30° = 19.6 \times \frac{\sqrt{3}}{2} = 9.8\sqrt{3}$ m/s、鉛直 $v_y = v_0\sin 30° = 9.8$ m/s</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>地面に戻る時刻は $t = \frac{2v_y}{g} = \frac{2 \times 9.8}{9.8} = 2.0$ s です。</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>水平距離は $x = v_x t = 9.8\sqrt{3} \times 2.0 = 19.6\sqrt{3} \approx 34$ m です。</div>
+  <div class="reveal ans">$x = 19.6\sqrt{3} \approx 34$ m</div>
+</div>
+
+<div class="sub-q">
+  <h3>② $v_0 = 4.9\sqrt{2}$ m/s, $\theta = 45°$</h3>
+  <div class="reveal plan">①と同じ手順です。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>水平 $v_x = 4.9\sqrt{2} \times \cos 45° = 4.9\sqrt{2} \times \frac{\sqrt{2}}{2} = 4.9$ m/s、鉛直 $v_y = 4.9$ m/s</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$t = \frac{2 \times 4.9}{9.8} = 1.0$ s です。</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>$x = 4.9 \times 1.0 = 4.9$ m です。</div>
+  <div class="reveal ans">$x = 4.9$ m</div>
+</div>
+
+<div class="sub-q">
+  <h3>③ $v_0 = 9.8\sqrt{3}$ m/s, $\theta = 60°$</h3>
+  <div class="reveal plan">①と同じ手順です。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>水平 $v_x = 9.8\sqrt{3} \times \cos 60° = 4.9\sqrt{3}$ m/s、鉛直 $v_y = 9.8\sqrt{3} \times \sin 60° = 14.7$ m/s</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$t = \frac{2 \times 14.7}{9.8} = 3.0$ s です。</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>$x = 4.9\sqrt{3} \times 3.0 = 14.7\sqrt{3} \approx 25$ m です。</div>
+  <div class="reveal ans">$x = 14.7\sqrt{3} \approx 25$ m</div>
+</div>
+</div>
+
+<!-- ══════ D3: 力積と速度変化 ══════ -->
+<div class="problem" data-book="drill1" data-id="d3" data-title="力積と速度変化">
+<img class="q-img" src="物理　ドリル1/IMG_1626.JPG" alt="力積と速度変化">
+
+<div class="sub-q">
+  <h3>(1) $m = 1.0$ kg, $v = 3.0$ m/s（右）, $F = 15$ N（左から）, $\Delta t = 0.10$ s</h3>
+  <div class="reveal plan">力積＝運動量の変化です。右向きを正として、力積を求めてから速度を出します。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>右向きを正とします。力は左から（右向き）なので、力積は $J = F\Delta t = 15 \times 0.10 = 1.5$ N·s（右向き）です。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>❽力積＝運動量の変化より $mv' = mv + J = 1.0 \times 3.0 + 1.5 = 4.5$ kg·m/s</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>$v' = 4.5 / 1.0 = 4.5$ m/s です。</div>
+  <div class="reveal ans">$v' = 4.5$ m/s</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2) $m = 3.0$ kg, $v = 2.0$ m/s（右）, $F = 30$ N（左から）, $\Delta t = 0.20$ s</h3>
+  <div class="reveal plan">(1)と同じ手順です。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>力積は $J = 30 \times 0.20 = 6.0$ N·s（右向き）です。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$mv' = 3.0 \times 2.0 + 6.0 = 12.0$ kg·m/s</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>$v' = 12.0 / 3.0 = 4.0$ m/s です。</div>
+  <div class="reveal ans">$v' = 4.0$ m/s</div>
+</div>
+</div>
+
+<!-- ══════ D4: 力積から力を求める ══════ -->
+<div class="problem" data-book="drill1" data-id="d4" data-title="力積から力を求める">
+<img class="q-img" src="物理　ドリル1/IMG_1627.JPG" alt="力積から力を求める">
+
+<div class="sub-q">
+  <h3>(1) $m = 2.0$ kg, $v = 4.0$ → $v' = 5.0$ m/s, $\Delta t = 0.10$ s</h3>
+  <div class="reveal plan">力積＝運動量の変化から力 $F$ を逆算します。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>右向きを正とします。運動量の変化は $\Delta p = mv' - mv = 2.0 \times 5.0 - 2.0 \times 4.0 = 2.0$ kg·m/s です。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$F\Delta t = \Delta p$ より $F \times 0.10 = 2.0$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>$F = 2.0 / 0.10 = 20$ N です。</div>
+  <div class="reveal ans">$F = 20$ N</div>
+</div>
+
+<div class="sub-q">
+  <h3>(2) $m = 3.0$ kg, $v = 4.0$ → $v' = 6.0$ m/s, $\Delta t = 0.10$ s</h3>
+  <div class="reveal plan">(1)と同じ手順です。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>$\Delta p = 3.0 \times 6.0 - 3.0 \times 4.0 = 6.0$ kg·m/s です。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>$F \times 0.10 = 6.0$</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>$F = 60$ N です。</div>
+  <div class="reveal ans">$F = 60$ N</div>
+</div>
+</div>
+
+<!-- ══════ D5: 衝突と運動量保存 ══════ -->
+<div class="problem" data-book="drill1" data-id="d5" data-title="衝突と運動量保存">
+<img class="q-img" src="物理　ドリル1/IMG_1628.JPG" alt="衝突と運動量保存">
+
+<div class="sub-q">
+  <h3>(1) A(3.0 kg, 3.0 m/s) → B(1.0 kg, 2.0 m/s) に衝突、衝突後 A は 2.5 m/s</h3>
+  <div class="reveal plan">衝突の前後で運動量の合計は変わりません。❺運動量保存則を立てて $v'$ を求めます。</div>
+  <div class="reveal step-item"><span class="step-num">1.</span>右向きを正として、❺運動量保存則を立てます。</div>
+  <div class="reveal step-item"><span class="step-num">2.</span>衝突前の運動量の合計：$3.0 \times 3.0 + 1.0 \times 2.0 = 11.0$ kg·m/s</div>
+  <div class="reveal step-item"><span class="step-num">3.</span>衝突後の運動量の合計：$3.0 \times 2.5 + 1.0 \times v' = 7.5 + v'$</div>
+  <div class="reveal step-item"><span class="step-num">4.</span>保存則より $11.0 = 7.5 + v'$、よって $v' = 3.5$ m/s です。</div>
+  <div class="reveal ans">$v' = 3.5$ m/s</div>
+</div>
+</div>
+
+<div class="global-ctrl">
+  <button class="global-btn" id="global-btn" onclick="revealNext()">次のヒント</button>
+  <button class="undo-btn" id="undo-btn" onclick="undoHint()" disabled>← 戻す</button>
+</div>
+</div><!-- /container -->
+
+<div class="block-panel" id="block-panel">
+  <div class="panel-sticky">
+    <div class="panel-title">🧩 解法パーツ</div>
+    <div class="panel-empty" id="panel-empty">ヒントを進めると、ここに解法のパーツが積まれていきます。</div>
+    <div id="block-list"></div>
+  </div>
+</div>
+
+</div><!-- /main-layout -->
+
+<script>
+/* ============================================================
+   ブロック定義 — 各問題 > 各小問 > 各ステップ
+   p:[id, label, math]  → パーツを生成
+   u:[id, ...]          → 既存パーツをハイライト
+   0 = 何もなし
+   ============================================================ */
+const BD = {
+  q12: [
+    [ // (1) 7 steps
+      {p:['q12-f','斜面方向の力','mg\\sin 30°']},
+      {u:['q12-f']},
+      {p:['q12-a','加速度','a = g/2']},
+      {p:['q12-N','垂直抗力','N = \\frac{\\sqrt{3}}{2}mg']},
+      {p:['q12-s','斜面距離','s = 2h']},
+      {u:['q12-a','q12-s']},
+      0
+    ],
+    [ // (2) 3 steps
+      0, 0,
+      {p:['q12-v','B点の速さ','v = \\sqrt{2gh}']}
+    ],
+    [ // (3) 6 steps
+      0,
+      {u:['q12-v'],p:['q12-vc','速度成分','v_x,\\; v_{y0}']},
+      {u:['q12-vc']},
+      {p:['q12-tan','角度条件','v_y/v_x = \\tan 60°']},
+      {u:['q12-vc','q12-tan']},
+      0
+    ],
+    [ // (4) 3 steps
+      {u:['q12-vc']},
+      0, 0
+    ]
+  ],
+  q16: [
+    [ // (1) 7 steps
+      {p:['q16-T','張力','T = Mg']},
+      {p:['q16-fs','最大静止摩擦','\\frac{\\sqrt{3}}{2}\\mu_s mg']},
+      {u:['q16-T','q16-fs']},
+      0,
+      {u:['q16-T','q16-fs']},
+      0, 0
+    ],
+    [ // (2-ア) 5 steps
+      0,
+      {p:['q16-drv','駆動力と抵抗','Mg \\;vs\\; mg\\sin 30°{+}\\mu_k mg\\cos 30°']},
+      {u:['q16-drv'],p:['q16-a2','加速度','a = 3g/10']},
+      {u:['q16-a2']},
+      {p:['q16-v2','速さ','v = \\sqrt{3gh/5}']}
+    ],
+    [ // (2-イ) 7 steps
+      0,
+      {p:['q16-dec','減速力','mg\\sin 30°{+}\\mu_k mg\\cos 30°']},
+      {u:['q16-dec'],p:['q16-a3','減速度','a_2']},
+      {u:['q16-a3','q16-v2']},
+      0, 0, 0
+    ]
+  ],
+  q21: [
+    [ // (1) 3 steps
+      0,
+      {p:['q21-vB','B点の速さ','v_B = \\sqrt{2gr}']},
+      {p:['q21-vC','C点の速さ','v_C = \\sqrt{gr}']}
+    ],
+    [ // (2) 2 steps
+      {p:['q21-Wg','重力の仕事','mgr/2']},
+      {p:['q21-WN','抗力の仕事','0']}
+    ],
+    [ // (3) 5 steps
+      {u:['q21-vC'],p:['q21-vc','速度成分','v_{Cx},\\; v_{Cy}']},
+      {u:['q21-vc'],p:['q21-vD','D点の速さ','v_D = \\sqrt{gr}/2']},
+      {u:['q21-vc']},
+      0, 0
+    ],
+    [ // (4) 2 steps
+      0,
+      {u:['q21-vB']}
+    ]
+  ],
+  q22: [
+    [ // (1) 3 steps
+      {p:['q22-spr','ばねのE','\\frac{1}{2}ka^2']},
+      0,
+      0
+    ],
+    [ // (2) 3 steps
+      {u:['q22-spr']},
+      0, 0
+    ],
+    [ // (3) 1 step
+      {u:['q22-spr']}
+    ],
+    [ // (4) 2 steps
+      {p:['q22-fr','摩擦力','\\mu mg']},
+      0
+    ],
+    [ // (5) 4 steps
+      0, 0,
+      {p:['q22-res','斜面の抵抗','mg(\\sin 30°{+}\\mu\\cos 30°)']},
+      {u:['q22-res']}
+    ]
+  ],
+  q25: [
+    [ // (1) 5 steps
+      0,
+      {p:['q25-mom','運動量保存','mv_0 = mv + MV']},
+      {p:['q25-e','反発係数式','V - v = ev_0']},
+      {u:['q25-mom','q25-e']},
+      0
+    ],
+    [ // (2) 2 steps
+      0, 0
+    ],
+    [ // (3) 2 steps
+      0, 0
+    ],
+    [ // (4) 6 steps
+      0, 0,
+      {p:['q25-up','上りの式','\\frac{1}{2}MV^2 = \\cdots']},
+      0,
+      {p:['q25-dn','下りの式','Mgl\\sin\\theta = \\cdots']},
+      {u:['q25-up','q25-dn']}
+    ]
+  ],
+  q26: [
+    [ // 衝突前 2 steps
+      0,
+      {p:['q26-v0','Aの速さ','v_0 = \\sqrt{gl}']}
+    ],
+    [ // (1) 3 steps
+      {u:['q26-v0']},
+      {u:['q26-v0']},
+      0
+    ],
+    [ // (2) 3 steps
+      {u:['q26-v0'],p:['q26-vB','Bの速さ','v_0/2']},
+      {u:['q26-vB']},
+      0
+    ],
+    [ // (3) 2 steps
+      {u:['q26-vB']},
+      0
+    ],
+    [ // (4) 3 steps
+      0, 0, 0
+    ],
+    [ // (5) 3 steps
+      0, 0, 0
+    ]
+  ],
+  q28: [
+    [ // (1) 3 steps
+      0, 0,
+      {p:['q28-tA','着地時刻','2v/g']}
+    ],
+    [ // (2) 3 steps
+      0, 0,
+      {p:['q28-sin','sin α','v/V']}
+    ],
+    [ // (3) 3 steps
+      {p:['q28-t','最高点時刻','v/g']},
+      {u:['q28-sin']},
+      {u:['q28-t','q28-sin']}
+    ],
+    [ // (4) 3 steps
+      0,
+      {u:['q28-sin']},
+      {p:['q28-vg','合体後の速度','MV\\cos\\alpha/(m{+}M)']}
+    ],
+    [ // (5) 3 steps
+      {u:['q28-vg']},
+      0, 0
+    ]
+  ],
+  q29: [
+    [ // (1) 4 steps
+      {p:['q29-mom','運動量保存','mv_R + 3mv_{PQ} = 0']},
+      {p:['q29-rel','相対速度','v_{PQ} - v_R = u']},
+      {u:['q29-mom','q29-rel']},
+      0
+    ],
+    [ // (2) 3 steps
+      {p:['q29-vR','Rの速度','v_R = -3u/4']},
+      0, 0
+    ],
+    [ // (3) 4 steps
+      {p:['q29-m2','2段目の運動量','mv_Q + 2mv_P = 3mu/4']},
+      {p:['q29-r2','2段目の相対速度','v_P - v_Q = u']},
+      {u:['q29-m2','q29-r2']},
+      0
+    ]
+  ],
+  d1: [
+    [0,0,0,0],
+    [0,0,0]
+  ],
+  d2: [
+    [0,0,0],
+    [0,0,0],
+    [0,0,0]
+  ],
+  d3: [
+    [0,0,0],
+    [0,0,0]
+  ],
+  d4: [
+    [0,0,0],
+    [0,0,0]
+  ],
+  d5: [
+    [0,0,0,0]
+  ],
+  q32: [
+    [ // (1) 2 steps
+      0, 0
+    ],
+    [ // (2-ア) 3 steps
+      {p:['q32-mom','運動量保存','mv + MV = 0']},
+      {p:['q32-E','E保存','mgh = \\tfrac{1}{2}mv^2 + \\tfrac{1}{2}MV^2']},
+      {u:['q32-mom','q32-E']}
+    ],
+    [ // (2-イ) 3 steps
+      {u:['q32-mom']},
+      {u:['q32-mom','q32-E']},
+      0
+    ],
+    [ // (2-ウ) 2 steps
+      {u:['q32-mom']},
+      0
+    ]
+  ]
+};
+
+/* ============================================================
+   アプリ本体
+   ============================================================ */
+const allProblems = [...document.querySelectorAll('.problem')];
+const btn = document.getElementById('global-btn');
+const undoBtn = document.getElementById('undo-btn');
+const blockList = document.getElementById('block-list');
+const panelEmpty = document.getElementById('panel-empty');
+let currentBook = 'mechanics';
+let problems = allProblems.filter(p => p.dataset.book === currentBook);
+let current = 0, queues = [], qIdx = [];
+
+function typeset(el) {
+  if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([el]);
+}
+
+function buildQueue(prob) {
+  const pid = prob.dataset.id;
+  const bd = BD[pid] || [];
+  const actions = [];
+  prob.querySelectorAll('.sub-q').forEach((sq, si) => {
+    const plan = sq.querySelector('.plan');
+    actions.push({ type: 'show-subq', el: sq, plan: plan });
+    let step = 0;
+    const subDef = bd[si] || [];
+    sq.querySelectorAll('.reveal').forEach(r => {
+      if (r === plan) return;
+      const isAns = r.classList.contains('ans');
+      let info = null;
+      if (!isAns) { info = subDef[step] || 0; step++; }
+      actions.push({
+        type: 'reveal', el: r, isAns: isAns,
+        produce: (info && info.p) ? { id: info.p[0], label: info.p[1], math: info.p[2] } : null,
+        useBlocks: (info && info.u) ? info.u : []
+      });
+    });
+  });
+  return actions;
+}
+
+function initQueues() {
+  queues = []; qIdx = [];
+  problems.forEach(p => { queues.push(buildQueue(p)); qIdx.push(0); });
+}
+
+function addBlock(b) {
+  const d = document.createElement('div');
+  d.className = 'mat-block'; d.id = 'blk-' + b.id;
+  d.innerHTML = '<div class="mat-label">' + b.label + '</div><div class="mat-math">$' + b.math + '$</div>';
+  blockList.appendChild(d);
+  typeset(d);
+}
+function removeBlock(id) {
+  const el = document.getElementById('blk-' + id);
+  if (el) el.remove();
+}
+function clearHighlights() {
+  blockList.querySelectorAll('.highlight').forEach(b => b.classList.remove('highlight'));
+}
+function highlightBlocks(ids) {
+  ids.forEach(id => {
+    const el = document.getElementById('blk-' + id);
+    if (el) el.classList.add('highlight');
+  });
+}
+function reapplyHighlights() {
+  clearHighlights();
+  const pos = qIdx[current];
+  if (pos <= 0) return;
+  const last = queues[current][pos - 1];
+  if (last.useBlocks && last.useBlocks.length) highlightBlocks(last.useBlocks);
+}
+function rebuildBlocks() {
+  blockList.innerHTML = '';
+  const q = queues[current];
+  for (let i = 0; i < qIdx[current]; i++) {
+    if (q[i].produce) addBlock(q[i].produce);
+  }
+}
+function syncPanel() {
+  panelEmpty.style.display = blockList.children.length ? 'none' : '';
+}
+
+function switchBook(book) {
+  if (book === currentBook) return;
+  currentBook = book;
+  document.querySelectorAll('.book-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.book === book);
+  });
+  problems = allProblems.filter(p => p.dataset.book === book);
+  current = 0;
+  initQueues();
+  showProblem(0);
+}
+
+function showProblem(idx) {
+  allProblems.forEach(p => p.style.display = 'none');
+  problems[idx].style.display = 'block';
+  document.getElementById('nav-title').textContent = problems[idx].dataset.title;
+  document.getElementById('nav-counter').textContent = (idx + 1) + ' / ' + problems.length;
+  document.getElementById('prev-btn').disabled = idx === 0;
+  document.getElementById('next-btn').disabled = idx === problems.length - 1;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  rebuildBlocks(); reapplyHighlights(); updateBtn(); syncPanel();
+  typeset(problems[idx]);
+}
+
+function updateBtn() {
+  const q = queues[current], pos = qIdx[current];
+  undoBtn.disabled = pos <= 0;
+  if (pos >= q.length) {
+    btn.textContent = 'すべて表示済み';
+    btn.classList.add('done'); btn.classList.remove('ans-mode');
+    return;
+  }
+  btn.classList.remove('done', 'ans-mode');
+  if (q[pos].isAns) {
+    btn.textContent = '解答を表示'; btn.classList.add('ans-mode');
+  } else {
+    btn.textContent = '次のヒント';
+  }
+}
+
+function revealNext() {
+  const q = queues[current], pos = qIdx[current];
+  if (pos >= q.length) return;
+  clearHighlights();
+  const a = q[pos];
+  if (a.type === 'show-subq') {
+    a.el.classList.add('active');
+    if (a.plan) a.plan.classList.add('show');
+    typeset(a.el);
+  } else {
+    a.el.classList.add('show');
+    typeset(a.el);
+    if (a.produce) addBlock(a.produce);
+    if (a.useBlocks.length) highlightBlocks(a.useBlocks);
+  }
+  qIdx[current]++;
+  setTimeout(() => a.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  updateBtn(); syncPanel();
+}
+
+function undoHint() {
+  const q = queues[current], pos = qIdx[current];
+  if (pos <= 0) return;
+  clearHighlights();
+  const a = q[pos - 1];
+  if (a.type === 'show-subq') {
+    a.el.classList.remove('active');
+    if (a.plan) a.plan.classList.remove('show');
+  } else {
+    a.el.classList.remove('show');
+    if (a.produce) removeBlock(a.produce.id);
+  }
+  qIdx[current]--;
+  reapplyHighlights(); updateBtn(); syncPanel();
+}
+
+function go(dir) {
+  const n = current + dir;
+  if (n >= 0 && n < problems.length) { current = n; showProblem(current); }
+}
+
+initQueues();
+showProblem(0);
+</script>
+</body>
+</html>
